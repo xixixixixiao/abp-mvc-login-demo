@@ -4,9 +4,24 @@ using Volo.Abp.Modularity;
 
 namespace Acme.BookStore.Web;
 
-[DependsOn(typeof(AbpAspNetCoreMvcModule))]
+[DependsOn(
+    typeof(BookStoreApplicationContractsModule),
+    typeof(AbpAspNetCoreMvcModule))]
 public class BookStoreWebModule : AbpModule
 {
+    public override void ConfigureServices(ServiceConfigurationContext context)
+    {
+        context.Services.AddHttpClientProxies(typeof(BookStoreApplicationContractsModule).Assembly);
+        context.Services.AddAuthentication(options =>
+            {
+                options.DefaultScheme = "Cookies";
+            })
+            .AddCookie("Cookies", options =>
+            {
+                options.ExpireTimeSpan = TimeSpan.FromDays(365);
+            });
+    }
+
     public override void OnApplicationInitialization(ApplicationInitializationContext context)
     {
         var app = context.GetApplicationBuilder();
@@ -23,6 +38,8 @@ public class BookStoreWebModule : AbpModule
         app.UseHttpsRedirection();
         app.UseStaticFiles();
         app.UseRouting();
+        app.UseAuthentication();
+        app.UseAuthorization();
         app.UseConfiguredEndpoints();
     }
 }
